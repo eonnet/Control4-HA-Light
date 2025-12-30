@@ -3,7 +3,7 @@
 ## Summary
 
 ### New / Improved / Fixed
-- Transition Rate Handling - Brightness and color ramp times now properly respected in default driver properties page and Advanced Lighting Agent Scene (ALS) definitions.
+- **Transition Rate Handling** - Brightness and color ramp times now properly respected in default driver properties page and Advanced Lighting Agent Scene (ALS) definitions.
 - **Advanced Lighting Scenes (ALS)** - Full `advanced_scene_support` API implementation
 - **Scene Color Tracking** - Scenes now correctly mark as "Active" when color matches within tolerance (see TODO below)
 
@@ -11,7 +11,7 @@
 - **Combined Scene Commands** - Brightness and color sent together to prevent visual artifacts
 - **Ramp Timer Management** - Deferred state notifications during transitions for accurate scene tracking and UI state tracking
 
-- Color On Mode Preset
+- **Color On Mode Preset**
 - **Color On Mode Previous** - Enables the "Previous" color restore option in Composer Pro
 - **Color On Mode Fade (Dim-to-Warm)** - Linear color interpolation between dim and bright colors based on brightness level
 
