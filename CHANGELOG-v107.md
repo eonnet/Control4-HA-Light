@@ -2,21 +2,29 @@
 
 ## Summary
 
-### New Features
-- **Color On Mode Previous** - Enables the "Previous" color restore option in Composer Pro
-- **Color On Mode Fade (Dim-to-Warm)** - Linear color interpolation between dim and bright colors based on brightness level
-- **Configurable Color Trace Tolerance** - Adjustable Delta E tolerance for scene color matching
-
-### Fixes
-- **Transition Rate Handling** - Brightness and color ramp times now properly respected
+### New / Improved / Fixed
+- Transition Rate Handling - Brightness and color ramp times now properly respected in default driver properties page and Advanced Lighting Agent Scene (ALS) definitions.
 - **Advanced Lighting Scenes (ALS)** - Full `advanced_scene_support` API implementation
-- **Scene Color Tracking** - Scenes now correctly mark as "Active" when color matches within tolerance
+- **Scene Color Tracking** - Scenes now correctly mark as "Active" when color matches within tolerance (see TODO below)
 
-### Improvements
 - **Preset ID Support** - Daylight Agent preset tracking for brightness commands
 - **Combined Scene Commands** - Brightness and color sent together to prevent visual artifacts
-- **Ramp Timer Management** - Deferred state notifications during transitions for accurate scene tracking
+- **Ramp Timer Management** - Deferred state notifications during transitions for accurate scene tracking and UI state tracking
 
+- Color On Mode Preset
+- **Color On Mode Previous** - Enables the "Previous" color restore option in Composer Pro
+- **Color On Mode Fade (Dim-to-Warm)** - Linear color interpolation between dim and bright colors based on brightness level
+
+### TODO
+
+- **Configurable Color Trace Tolerance** - Tried adding an Adjustable Delta E tolerance for scene color matching.  
+  Changes to the value are not being respected by the Advanced Lighting scene tracking.  
+  The tolerance in CCT space seems to be fixed at around 110 kelvin in the 4000K region.
+  I'm sure this works for almost everyone and not many have a need for color tracking for scene activation but it's not working and I believe being ignored by the director.
+
+- **Push and Hold to Ramp** - Applies anything where you push and hold to transition.  This is currently working for brightness via an undesirable workaround. 
+  CCT and Color will be difficult or impossible to get working well without a light.stop interface exposed by HomeAssistant to arrest the progress of the ramp.
+  Home Assistant's lack of a stop method and minimal state updates during transitions necessitate way more complexity than desirable in this interface.
 ---
 
 ## Technical Details
@@ -65,9 +73,9 @@ brightnessServiceCall.service_data.color_temp_kelvin = C4:ColorXYtoCCT(fadeX, fa
 
 ### 3. Suppressing Unwanted Color Commands in Fade Mode
 
-**Discovery**: When fade mode is active, the C4 proxy periodically sends `SET_COLOR_TARGET` commands with the preset On or Dim color values. These commands would override the driver's calculated fade color, causing the light to jump to the preset color instead of the interpolated color.
+When fade mode is active, the C4 proxy periodically sends `SET_COLOR_TARGET` commands with the preset On or Dim color values. These commands would override the driver's calculated fade color, causing the light to jump to the preset color instead of the interpolated color.
 
-**Solution**: The driver compares incoming `SET_COLOR_TARGET` coordinates against the stored preset colors and ignores commands that match:
+The driver now compares incoming `SET_COLOR_TARGET` coordinates against the stored preset colors and ignores commands that match:
 
 ```lua
 if COLOR_ON_MODE_FADE_ENABLED then
@@ -93,13 +101,13 @@ end
 
 The tolerance of 0.005 in XY space accounts for floating-point rounding. Commands with different colors (e.g., scene activations, manual color changes) pass through normally.
 
-**Limitation**: If the Composer UI has other color presets configured that don't match the current On/Dim presets, those sync commands will still reach the driver. This appears to be a Composer configuration issue rather than a driver issue.
+If the Composer UI has other color presets configured that don't match the current On/Dim presets, those sync commands will still reach the driver. 
 
 ### 4. Ramp Timer Management
 
-**Discovery**: Home Assistant reports the target state immediately when a transition command is sent, rather than waiting for the transition to complete. If the driver forwards this state to C4 immediately, C4's scene tracking compares the target against the current (mid-transition) state and may incorrectly mark the scene as inactive.
+Home Assistant reports the new target state almost immediately when a transition command is sent, rather than waiting for the transition to complete, or sending gradual updates as the luminaire transitions. If the driver forwards this state to C4 when received, C4's user interface elements jump to the fully transitioned state and the ALS scene goes "Active" at the start rather than the end of the transition.
 
-**Solution**: When a brightness or color command includes a rate > 0, the driver:
+When a brightness or color command includes a rate > 0, the driver:
 1. Sets a timer for the duration of the ramp
 2. Defers `LIGHT_BRIGHTNESS_CHANGED` and `LIGHT_COLOR_CHANGED` notifications until the timer expires
 3. Stores pending state data if HA reports during the ramp
@@ -129,11 +137,10 @@ end
 
 ### 5. Combined Scene Commands
 
-**Discovery**: When `ACTIVATE_SCENE` includes both brightness and color, the driver originally executed them as separate HA commands. With dim-to-warm enabled, this caused a visual flash:
-1. `SET_BRIGHTNESS_TARGET` applied the dim-to-warm interpolated color
-2. Milliseconds later, `SET_COLOR_TARGET` applied the scene's actual color
+When `ACTIVATE_SCENE` includes both brightness and color, the driver originally executed them as separate HA commands. 
+With dim-to-warm enabled, this caused visual flashing and inconsistent state transitions.
 
-**Solution**: When a scene has both brightness and color enabled, send them as a single HA service call:
+When a scene has both brightness and color enabled, send them as a single HA service call:
 
 ```lua
 if (levelEnabled or el.level ~= nil or el.brightness ~= nil) and colorEnabled then
@@ -154,7 +161,11 @@ end
 
 ### 6. C4 Color Conversion Functions
 
-**Critical**: Always use C4's native color conversion functions to stay within C4's color space. Using external formulas produces different XY values that break scene tracking.
+Always use C4's native color conversion functions to stay within C4's color space. C4 uses an implementation for CCT and XY chromaticity that doesn't precisely match well known formulas. 
+They also round CCT temps down to the nearest 10k which causes matching issues if you aim for higher precision.  
+Just use their color conversion routines whenever possible. 
+Be aware also that there is rounding in Home Assistant and this is particularly bad when it's in mired space. Generally we care about CCT's in the 200-400 mired range and rounding down from 199.99 mireds to 199 mireds is a 25k deviation.
+Natively, c4 will always manage colors in XY space.
 
 Available functions:
 - `C4:ColorCCTtoXY(kelvin)` - Kelvin to CIE 1931 xy
@@ -174,7 +185,7 @@ The round-trip through C4's conversion ensures matching XY coordinates:
 
 ### 7. Color Trace Tolerance
 
-The `color_trace_tolerance` capability controls scene color matching precision. Exposed as a configurable property in Composer Pro (range 0.5 to 10.0, default 1.0).
+Can't get this to work. The `color_trace_tolerance` capability controls scene color matching precision. 
 
 ```lua
 function OPC.Color_Trace_Tolerance(value)
@@ -185,11 +196,12 @@ function OPC.Color_Trace_Tolerance(value)
 end
 ```
 
+Enabling the feature in driver.xml and changing the property at runtime seems to propagate everywhere but I can't tune any more or less color temp tolerance in two ALS scenes that are 'close' but not matching. As mentioned above, around 4000K there is ~110K tolerance to be considered "Active". This works for most applications and addresses the stepping and rounding issues discussed above in almost all cases.
+
 Comparison methods (handled by C4 Director):
 - Delta > 0.01: Uses CIE L*a*b* Delta E formula
 - Delta <= 0.01: Uses xy chromaticity Euclidean distance
 
-Most humans detect color differences at Delta E >= 3.0.
 
 ### 8. Preset ID Support
 
@@ -253,19 +265,3 @@ This capability requires implementing the following commands:
 
 **Performance requirement**: The driver uses the Brightness Target API (`LIGHT_BRIGHTNESS_CHANGING`/`LIGHT_BRIGHTNESS_CHANGED`) and only sends one level update when the hardware reaches the final scene level. This is achieved through ramp timer management that defers `CHANGED` notifications until the transition completes.
 
----
-
-## Files Modified
-
-- `driver.xml` - Added `color_on_mode_previous` and `color_on_mode_fade` capabilities
-- `commands.lua` - All handler implementations
-
-## Testing Notes
-
-1. Enable Debug Mode in Composer Pro to see detailed logging
-2. Test dim-to-warm by adjusting brightness and observing color temperature
-3. Test scene activation with both brightness and color enabled
-4. Verify scene shows "Active" status after activation
-5. Test transition rates by observing ramp timing matches configured values
-6. Test scene ramp up/down by holding buttons in Navigator (if keypads support it)
-7. Verify PUSH_SCENE stores data correctly (check debug output on driver load)

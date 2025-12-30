@@ -35,14 +35,6 @@
 				<default>Off</default>
 				<readonly>false</readonly>
 			</property>
-			<property>
-				<name>Color Trace Tolerance</name>
-				<type>RANGED_FLOAT</type>
-				<minimum>0.1</minimum>
-				<maximum>3</maximum>
-				<default>1.5</default>
-				<readonly>false</readonly>
-			</property>
 		</properties>
 		<actions>
 		</actions>
@@ -63,7 +55,6 @@
 		<advanced_scene_support>True</advanced_scene_support>
 		<color_on_mode_previous>True</color_on_mode_previous>
 		<color_on_mode_fade>True</color_on_mode_fade>
-		<color_trace_tolerance>0.01</color_trace_tolerance>
 	</capabilities>
 	<events/>
 	<connections>

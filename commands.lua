@@ -67,22 +67,7 @@ PREVIOUS_ON_COLOR_MODE = nil
 ===========================================================================]]
 
 function DRV.OnDriverInit(init)
-    -- 1. Read Static Capabilities (Hardware definitions from XML)
-    local color_tolerance = C4:GetCapability("color_trace_tolerance")
-    if color_tolerance ~= nil then
-        local parsed = tonumber(color_tolerance)
-    
-        if parsed then
-            COLOR_TRACE_TOLERANCE = parsed
-            print("Driver Init: COLOR_TRACE_TOLERANCE set to " .. COLOR_TRACE_TOLERANCE)
-        else
-            -- Explicit failure logging
-            print("[ERROR] Driver XML Capability 'color_trace_tolerance' defined but invalid: '" .. tostring(color_tolerance) .. "'. Expected a number.")
-            -- Optionally: leave COLOR_TOLERANCE as nil to force a crash later if that's preferred.
-        end
-    else
-        print("[WARNING] Driver XML Capability 'color_trace_tolerance' is missing.")
-    end
+
 end
 
 function DRV.OnDriverLateInit(init)
@@ -1192,8 +1177,7 @@ function Parse(data)
             supports_color_correlated_temperature = hasCCT,
             color_correlated_temperature_min = MIN_K_TEMP,
             color_correlated_temperature_max = MAX_K_TEMP,
-            has_extras = HAS_EFFECTS,
-            color_trace_tolerance = COLOR_TRACE_TOLERANCE
+            has_extras = HAS_EFFECTS
         }
 
         C4:SendToProxy(5001, 'DYNAMIC_CAPABILITIES_CHANGED', tParams, "NOTIFY")
@@ -1234,19 +1218,3 @@ end
     Property Change Handlers (OPC.*)
 ===========================================================================]]
 
--- Handle Color Trace Tolerance property change from Composer
-function OPC.Color_Trace_Tolerance(value)
-    COLOR_TRACE_TOLERANCE = tonumber(value)
-
-    if DEBUGPRINT then
-        print("[DEBUG] OPC.Color_Trace_Tolerance :: Color Trace Tolerance set to: " .. tostring(COLOR_TRACE_TOLERANCE))
-    end
-
-    C4:SendToProxy(5001, 'DYNAMIC_CAPABILITIES_CHANGED', {
-        color_trace_tolerance = COLOR_TRACE_TOLERANCE
-    }, "NOTIFY")
-
-    C4:SendToProxy(5001, 'DYNAMIC_CAPABILITIES_CHANGED', {
-        color_trace_tolerance = 0.01
-    }, "NOTIFY")
-end
