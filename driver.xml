@@ -5,8 +5,8 @@
 	<name>HA Light</name>
 	<model>HA Light</model>
 	<created>09/10/2023 12:00</created>
-	<modified>03/04/2024 12:00</modified>
-	<version>107</version>
+	<modified>03/02/2026 12:00</modified>
+	<version>107.1</version>
 	<control>lua_gen</control>
 	<controlmethod>IP</controlmethod>
 	<driver>DriverWorks</driver>
@@ -19,12 +19,14 @@
 				<readonly>false</readonly>
 				<default>light.table_lamp</default>
 			</property>
+
 			<property>
 				<name>Driver Version</name>
 				<default></default>
 				<type>STRING</type>
 				<readonly>true</readonly>
 			</property>
+
 			<property>
 				<name>Debug Mode</name>
 				<type>LIST</type>
@@ -36,27 +38,49 @@
 				<readonly>false</readonly>
 			</property>
 		</properties>
-		<actions>
-		</actions>
+
+		<actions/>
 		<commands/>
 	</config>
+
 	<proxies>
 		<proxy proxybindingid="5001" name="HA Light">light_v2</proxy>
 	</proxies>
+
 	<capabilities>
+		<!-- Core light capabilities -->
 		<dimmer>True</dimmer>
 		<on_off>True</on_off>
 		<has_load>True</has_load>
 		<set_level>True</set_level>
 		<supports_target>True</supports_target>
 		<load_group_support>True</load_group_support>
+
+		<!-- Rates / scenes -->
 		<brightness_rate_min>0</brightness_rate_min>
 		<brightness_rate_max>100000</brightness_rate_max>
 		<advanced_scene_support>True</advanced_scene_support>
+
+		<!-- Brightness On Mode (from your Miki xml) -->
+		<brightness_on_mode_previous>true</brightness_on_mode_previous>
+		<brightness_on_mode_preset>true</brightness_on_mode_preset>
+
+		<!-- Color On Mode (from BP xml) -->
 		<color_on_mode_previous>True</color_on_mode_previous>
 		<color_on_mode_fade>True</color_on_mode_fade>
+
+		<!-- Ramp / click / hold (from your Miki xml) -->
+		<ramp_level>true</ramp_level>
+
+		<click_rates>True</click_rates>
+		<click_rate_min>250</click_rate_min>
+
+		<hold_rates>True</hold_rates>
+		<hold_rate_min>5000</hold_rate_min>
 	</capabilities>
+
 	<events/>
+
 	<connections>
 		<connection>
 			<id>999</id>
@@ -71,11 +95,12 @@
 				</class>
 			</classes>
 		</connection>
+
 		<connection>
 			<id>5001</id>
 			<facing>6</facing>
-			<connectionname>LIGHT</connectionname>
 			<type>2</type>
+			<connectionname>LIGHT</connectionname>
 			<consumer>false</consumer>
 			<audiosource>false</audiosource>
 			<videosource>false</videosource>
@@ -86,11 +111,12 @@
 				</class>
 			</classes>
 		</connection>
+
 		<connection>
 			<id>200</id>
 			<facing>6</facing>
-			<connectionname>Top Button Link</connectionname>
 			<type>1</type>
+			<connectionname>Top Button Link</connectionname>
 			<consumer>False</consumer>
 			<audiosource>False</audiosource>
 			<videosource>False</videosource>
@@ -101,11 +127,12 @@
 				</class>
 			</classes>
 		</connection>
+
 		<connection>
 			<id>201</id>
 			<facing>6</facing>
-			<connectionname>Bottom Button Link</connectionname>
 			<type>1</type>
+			<connectionname>Bottom Button Link</connectionname>
 			<consumer>False</consumer>
 			<audiosource>False</audiosource>
 			<videosource>False</videosource>
@@ -116,11 +143,12 @@
 				</class>
 			</classes>
 		</connection>
+
 		<connection>
 			<id>202</id>
 			<facing>6</facing>
-			<connectionname>Toggle Button Link</connectionname>
 			<type>1</type>
+			<connectionname>Toggle Button Link</connectionname>
 			<consumer>False</consumer>
 			<audiosource>False</audiosource>
 			<videosource>False</videosource>
