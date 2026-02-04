@@ -6,7 +6,7 @@
 	<model>HA Light</model>
 	<created>09/10/2023 12:00</created>
 	<modified>03/02/2026 12:00</modified>
-	<version>107.1</version>
+	<version>107.9</version>
 	<control>lua_gen</control>
 	<controlmethod>IP</controlmethod>
 	<driver>DriverWorks</driver>
@@ -36,8 +36,9 @@
 				</items>
 				<default>Off</default>
 				<readonly>false</readonly>
+		
 			</property>
-		</properties>
+</properties>
 
 		<actions/>
 		<commands/>
@@ -74,9 +75,11 @@
 
 		<click_rates>True</click_rates>
 		<click_rate_min>250</click_rate_min>
+		<click_rate_max>5000</click_rate_max>
 
 		<hold_rates>True</hold_rates>
 		<hold_rate_min>5000</hold_rate_min>
+		<hold_rate_max>30000</hold_rate_max>
 	</capabilities>
 
 	<events/>
