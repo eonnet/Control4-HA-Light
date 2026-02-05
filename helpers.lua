@@ -1,5 +1,17 @@
 local Helpers = {}
 
+
+
+-- Normalize rate values coming from proxies/services.
+-- Control4 often sends RATE=0 to indicate "not specified". We treat nil/0/negative as "use fallback".
+function Helpers.NormalizeRate(rate, fallback)
+    local r = tonumber(rate)
+    if (r == nil) or (r <= 0) then
+        return tonumber(fallback) or 0
+    end
+    return r
+end
+
 -- Linear Interpolation helper
 function Helpers.lerp(startVal, endVal, elapsed, duration)
     if duration <= 0 then return endVal end
@@ -208,5 +220,50 @@ function Helpers.convertTableTypes(tbl, overrides)
     process(tbl)
     return tbl
 end
+
+
+-- ============================
+-- Brightness mapping helpers
+-- Control4 uses 0..99 levels, Home Assistant uses 0..255 brightness (and/or 0..100 percent).
+-- We use ROUND when reporting to HA (state/display) and FLOOR when converting HA->C4 (commands)
+-- to avoid level "drift" that breaks Advanced Lighting Scenes.
+-- ============================
+
+function Helpers.clamp(v, lo, hi)
+    v = tonumber(v) or 0
+    if v < lo then return lo end
+    if v > hi then return hi end
+    return v
+end
+
+-- C4 level 0..99 -> HA brightness 0..255 (state/update)
+function Helpers.C4LevelToHABrightness(c4_level)
+    c4_level = Helpers.clamp(c4_level, 0, 99)
+    return Helpers.clamp(math.floor((c4_level * 255 / 99) + 0.5), 0, 255) -- round
+end
+
+-- HA brightness 0..255 -> C4 level 0..99 (command)
+function Helpers.HABrightnessToC4Level(ha_brightness)
+    ha_brightness = Helpers.clamp(ha_brightness, 0, 255)
+    return Helpers.clamp(math.floor(ha_brightness * 99 / 255), 0, 99) -- floor (stable)
+end
+
+-- C4 level 0..99 -> HA percent 0..100 (optional)
+function Helpers.C4LevelToHAPercent(c4_level)
+    c4_level = Helpers.clamp(c4_level, 0, 99)
+    return Helpers.clamp(math.floor((c4_level * 100 / 99) + 0.5), 0, 100) -- round
+end
+
+-- HA percent 0..100 -> C4 level 0..99 (optional)
+function Helpers.HAPercentToC4Level(pct)
+    pct = Helpers.clamp(pct, 0, 100)
+    return Helpers.clamp(math.floor(pct * 99 / 100), 0, 99) -- floor (stable)
+end
+
+-- Backwards-compatible globals (some driver files call these as globals)
+_G.C4LevelToHABrightness = Helpers.C4LevelToHABrightness
+_G.HABrightnessToC4Level = Helpers.HABrightnessToC4Level
+_G.C4LevelToHAPercent = Helpers.C4LevelToHAPercent
+_G.HAPercentToC4Level = Helpers.HAPercentToC4Level
 
 return Helpers
